@@ -1,3 +1,9 @@
+# coding=utf-8
+
+
+#-------------------------------------------------------------------------------------------------#
+
+
 from typing import List, Optional
 
 from datetime import datetime
@@ -7,6 +13,9 @@ from enum import Enum
 from sqlmodel import Field, Relationship, SQLModel, DateTime
 
 from sqlalchemy import Column
+
+
+#-------------------------------------------------------------------------------------------------#
 
 
 class DroneModel(str, Enum):
@@ -23,6 +32,9 @@ class DroneState(str, Enum):
     delivering = "DELIVERING"
     delivered = "DELIVERED"
     returning = "RETURNING"
+
+
+#-------------------------------------------------------------------------------------------------#
 
 
 class DroneBase(SQLModel):
@@ -57,11 +69,14 @@ class DroneUpdate(SQLModel):
     state: Optional[DroneState] = None
 
 
+#-------------------------------------------------------------------------------------------------#
+
+
 class MedicationBase(SQLModel):
     name: str = Field(regex=r"^[a-zA-Z0-9-_]+$") # allowed only letters, numbers, ‘-‘, ‘_’
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow, sa_column=Column("created_at", DateTime(timezone=True)))
     last_update: Optional[datetime] = Field(default_factory=datetime.utcnow, sa_column=Column("last_update", DateTime(timezone=True)))
-    weight: float = Field(ge=0)
+    weight: float = Field(ge=1)
     code: str = Field(regex=r"^[A-Z0-9_]+$", unique=True) # allowed only upper case letters, underscore and numbers);
     image: str = Field()
     drone_id: Optional[int] = Field(default=None, foreign_key="drone.id")
@@ -87,3 +102,7 @@ class MedicationUpdate(SQLModel):
     code: Optional[str] = None
     image: Optional[str] = None
     drone_id: Optional[int] = None
+
+
+#-------------------------------------------------------------------------------------------------#
+

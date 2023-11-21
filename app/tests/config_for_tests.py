@@ -6,8 +6,7 @@
 
 import sys
 from pathlib import Path
-path = Path(__file__).absolute()
-print(path)
+path = Path(__file__).absolute().parent
 sys.path.append(str(path))
 
 

@@ -5,7 +5,7 @@
 
 
 from app.models import DroneModel, DroneState
-from app.config_for_tests import *
+from app.tests.config_for_tests import *
 
 
 #-------------------------------------------------------------------------------------------------#
