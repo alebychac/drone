@@ -40,6 +40,25 @@ drone_item_incomplete = {
 #-------------------------------------------------------------------------------------------------#
 
 
+def test_get_drone_models(client: TestClient):
+    
+    response = client.get(f"{base_url}/{drones_url}/models")
+    print(response.url)
+    assert response.status_code == 200
+    assert response.json() == {"drone_models": [model.value for model in DroneModel]}
+
+
+def test_get_drone_states(client: TestClient):
+    
+    response = client.get(f"{base_url}/{drones_url}/states")
+    print(response.url)
+    assert response.status_code == 200
+    assert response.json() == {"drone_states": [model.value for model in DroneState]}
+
+
+#-------------------------------------------------------------------------------------------------#
+
+
 def test_read_drone(session: Session, client: TestClient):
     
     response = client.post(f"{base_url}/{drones_url}/", json=drone_item_1)
@@ -283,4 +302,5 @@ def test_create_drone_with_weight_limit_under_limit(client: TestClient):
 
 
 #-------------------------------------------------------------------------------------------------#
+
 

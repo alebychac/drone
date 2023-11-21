@@ -22,7 +22,9 @@ from .models import (
     Medication,
     MedicationRead,
     MedicationCreate,
-    MedicationUpdate
+    MedicationUpdate, 
+    DroneModel, 
+    DroneState
 )
 
 
@@ -30,6 +32,19 @@ from .models import (
 
 
 drones_router = APIRouter()
+
+
+@drones_router.get("/drones/models")
+async def get_drone_models():
+    return {"drone_models": [model.value for model in DroneModel]}
+
+
+@drones_router.get("/drones/states")
+async def get_drone_states():
+    return {"drone_states": [model.value for model in DroneState]}
+
+
+#-------------------------------------------------------------------------------------------------#
 
 
 @drones_router.post("/drones/", response_model=DroneRead)
