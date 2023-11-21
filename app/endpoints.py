@@ -68,6 +68,18 @@ def read_drones(
 ):
     drones = session.exec(select(Drone).offset(offset).limit(limit)).all()
     return drones
+#-------------------------------------------------------------------------------------------------#
+
+
+@drones_router.get("/drones/idle-drones", response_model=List[DroneRead])
+async def get_idle_drones(
+    *,
+    session: Session = Depends(get_session),
+    offset: int = 0,
+    limit: int = Query(default=100, le=100),
+):
+    drones = session.exec(select(Drone).where(Drone.state == DroneState.idle).offset(offset).limit(limit)).all()
+    return drones
 
 
 @drones_router.get("/drones/{drone_id}", response_model=DroneRead)
