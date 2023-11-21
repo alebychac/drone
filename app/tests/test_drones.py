@@ -114,6 +114,86 @@ def test_get_idle_drones(session: Session, client: TestClient):
     assert data[1]["battery_capacity"] == 100
     assert data[1]["state"] == DroneState.idle
 
+
+#-------------------------------------------------------------------------------------------------#
+
+
+def test_read_drone_by_serial_number(session: Session, client: TestClient):
+    
+    response = client.post(f"{base_url}/{drones_url}/", json=drone_item_1)
+    drone_serial_number = response.json()["serial_number"]
+    assert response.status_code == 200
+
+    response = client.get(f"{base_url}/{drones_url}/serial_number/{drone_serial_number}")
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data["serial_number"] == drone_item_1["serial_number"]
+    assert data["model"] == drone_item_1["model"]
+    assert data["weight_limit"] == drone_item_1["weight_limit"]
+    assert data["battery_capacity"] == drone_item_1["battery_capacity"]
+    assert data["state"] == drone_item_1["state"]
+
+
+def test_read_drone_by_serial_number_that_doesnt_exists(session: Session, client: TestClient):
+    
+    response = client.post(f"{base_url}/{drones_url}/", json=drone_item_1)
+    assert response.status_code == 200
+
+    response = client.get(f"{base_url}/{drones_url}/serial_number/{drone_item_2['serial_number']}")
+    assert response.status_code == 404
+
+
+#-------------------------------------------------------------------------------------------------#
+
+
+def test_read_drone_battery_level(session: Session, client: TestClient):
+    
+    response = client.post(f"{base_url}/{drones_url}/", json=drone_item_1)
+    drone_id = response.json()["id"]
+    drone_battery_level = response.json()["battery_capacity"]
+    assert response.status_code == 200
+
+    response = client.get(f"{base_url}/{drones_url}/{drone_id}/battery_level")
+    data = response.json()
+    assert response.status_code == 200
+    assert data == {'drone id': drone_id, 'battery_level': drone_battery_level}
+
+
+def test_read_drone_battery_level_for_drone_that_doesnt_exists(session: Session, client: TestClient):
+    
+    response = client.post(f"{base_url}/{drones_url}/", json=drone_item_1)
+    assert response.status_code == 200
+
+    response = client.get(f"{base_url}/{drones_url}/{2}/battery_level")
+    assert response.status_code == 404
+
+
+#-------------------------------------------------------------------------------------------------#
+
+
+def test_read_drone_battery_level_by_serial_number(session: Session, client: TestClient):
+    
+    response = client.post(f"{base_url}/{drones_url}/", json=drone_item_1)
+    drone_serial_number = response.json()["serial_number"]
+    drone_battery_level = response.json()["battery_capacity"]
+    assert response.status_code == 200
+
+    response = client.get(f"{base_url}/{drones_url}/serial_number/{drone_item_1['serial_number']}/battery_level")
+    data = response.json()
+    assert response.status_code == 200
+    assert data == {'drone serial number': drone_serial_number, 'battery_level': drone_battery_level}
+
+
+def test_read_drone_battery_level_by_serial_number_for_drone_that_doesnt_exists(session: Session, client: TestClient):
+
+    response = client.post(f"{base_url}/{drones_url}/", json=drone_item_1)
+    assert response.status_code == 200
+
+    response = client.get(f"{base_url}/{drones_url}/serial_number/{drone_item_2['serial_number']}/battery_level")
+    assert response.status_code == 404
+
+
 #-------------------------------------------------------------------------------------------------#
 
 

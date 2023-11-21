@@ -47,6 +47,52 @@ async def get_drone_states():
 #-------------------------------------------------------------------------------------------------#
 
 
+@drones_router.get("/drones/idle-drones", response_model=List[DroneRead])
+async def get_idle_drones(
+    *,
+    session: Session = Depends(get_session),
+    offset: int = 0,
+    limit: int = Query(default=100, le=100),
+):
+    drones = session.exec(select(Drone).where(Drone.state == DroneState.idle).offset(offset).limit(limit)).all()
+    return drones
+
+
+#-------------------------------------------------------------------------------------------------#
+
+
+@drones_router.get("/drones/serial_number/{serial_number}", response_model=DroneRead)
+def read_drone_by_serial_number(*, session: Session = Depends(get_session), serial_number: str):
+    query = select(Drone).where(Drone.serial_number == serial_number)
+    drone = session.exec(query).first()
+    if not drone:
+        raise HTTPException(status_code=404, detail="Drone not found")
+    return drone
+
+
+#-------------------------------------------------------------------------------------------------#
+
+
+@drones_router.get("/drones/{drone_id}/battery_level")
+def read_drone_battery_level(*, session: Session = Depends(get_session), drone_id: int):
+    drone = session.get(Drone, drone_id)
+    if not drone:
+        raise HTTPException(status_code=404, detail="Drone not found")
+    return {"drone id": drone.id, "battery_level": drone.battery_capacity}
+
+
+@drones_router.get("/drones/serial_number/{serial_number}/battery_level")
+def read_drone_battery_level_by_serial_number(*, session: Session = Depends(get_session), serial_number: str):
+    query = select(Drone).where(Drone.serial_number == serial_number)
+    drone = session.exec(query).first()
+    if not drone:
+        raise HTTPException(status_code=404, detail="Drone not found")
+    return {"drone serial number": drone.serial_number, "battery_level": drone.battery_capacity}
+
+
+#-------------------------------------------------------------------------------------------------#
+
+
 @drones_router.post("/drones/", response_model=DroneRead)
 def create_drone(*, session: Session = Depends(get_session), drone: DroneCreate):
     db_drone = Drone.from_orm(drone)
@@ -68,18 +114,9 @@ def read_drones(
 ):
     drones = session.exec(select(Drone).offset(offset).limit(limit)).all()
     return drones
+
+
 #-------------------------------------------------------------------------------------------------#
-
-
-@drones_router.get("/drones/idle-drones", response_model=List[DroneRead])
-async def get_idle_drones(
-    *,
-    session: Session = Depends(get_session),
-    offset: int = 0,
-    limit: int = Query(default=100, le=100),
-):
-    drones = session.exec(select(Drone).where(Drone.state == DroneState.idle).offset(offset).limit(limit)).all()
-    return drones
 
 
 @drones_router.get("/drones/{drone_id}", response_model=DroneRead)
