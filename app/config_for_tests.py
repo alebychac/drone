@@ -29,7 +29,7 @@ from app.db_engine import get_session
 
 base_url = "/api/v1"
 drones_url = "drones"
-medication_url = "medication"
+medications_url = "medications"
 
 
 app = FastAPI()
