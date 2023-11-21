@@ -2,13 +2,13 @@ from fastapi import FastAPI, APIRouter
 
 from .db_engine import *
 from .models import *
-from .endpoints import drone_router
+from .endpoints import drones_router
 
 
 app = FastAPI()
 
 api_router = APIRouter()
-api_router.include_router(drone_router)
+api_router.include_router(drones_router)
 
 app.include_router(api_router, prefix=f"/api/v1")
 
