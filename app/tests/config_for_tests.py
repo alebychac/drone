@@ -21,7 +21,7 @@ from sqlmodel.pool import StaticPool
 
 from app.main import api_router
 from app.db_engine import get_session
-from app.models import DroneModel, DroneState, Drone
+from app.models import DroneModel, DroneState, Drone, Medication
 
 
 #-------------------------------------------------------------------------------------------------#

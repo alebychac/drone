@@ -463,6 +463,41 @@ def test_delete_drone_that_doesnt_exists(session: Session, client: TestClient):
     assert response.status_code == 404
 
 
+def test_delete_drone_linked_to_a_medication(session: Session, client: TestClient):
+    response = client.post(f"{base_url}/{drones_url}/", json=drone_item_1)
+    drone_data = response.json()
+    assert response.status_code == 200
+    
+    response = client.post(f"{base_url}/{medications_url}/", json=medication_item_1)
+    med_data = response.json()
+    medication_id = med_data['id']
+    assert response.status_code == 200
+    
+    response = client.post(f"{base_url}/{medications_url}/{med_data['code']}/link-drone/{drone_item_1['serial_number']}")
+    assert response.status_code == 200
+    assert {'message': f"Medication {med_data['code']} linked with drone {drone_item_1['serial_number']}"} 
+    
+    query_drone = select(Drone).where(Drone.serial_number == drone_data['serial_number'])
+    drone = session.exec(query_drone).first()
+    medications = drone.medications
+
+    assert medications[0].id == med_data["id"]
+    assert medications[0].name == med_data["name"]
+    assert medications[0].code == med_data["code"]
+    assert medications[0].weight == med_data["weight"]
+    assert medications[0].image == med_data["image"]
+    
+    response = client.delete(f"{base_url}/{drones_url}/{drone_data['id']}")
+    assert response.status_code == 200
+    
+    response = client.get(f"{base_url}/{drones_url}/{drone_data['id']}")
+    assert response.status_code == 404
+
+    medication = session.get(Medication, medication_id)
+    assert medication.drone_id == None
+
+
+
 #-------------------------------------------------------------------------------------------------#
 
 
