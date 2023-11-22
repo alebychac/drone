@@ -202,7 +202,18 @@ medications_router = APIRouter()
 @medications_router.post("/medications/", response_model=MedicationRead)
 def create_medication(*, session: Session = Depends(get_session), medication: MedicationCreate):
 
-    db_medication = Medication.from_orm(medication)
+    db_medication = Medication.from_orm(medication)    
+
+    if db_medication.drone_id:
+        drone = session.get(Drone, db_medication.drone_id)
+        if not drone:
+            raise HTTPException(status_code=404, detail="Drone not found")
+    
+        available_cargo_weight = drone.weight_limit - sum([med.weight for med in drone.medications])
+
+        if available_cargo_weight < db_medication.weight:
+            raise HTTPException(status_code=422, detail=f"The weight of the Medication exceeds the available cargo weight of the Drone.")
+
     try:
         session.add(db_medication)
         session.commit()
@@ -240,12 +251,30 @@ def update_medication(
         if not db_medication:
             raise HTTPException(status_code=404, detail="Medication not found")
         medication_data = medication.dict(exclude_unset=True)
-
         
 
         if "weight" in medication_data.keys():
             if medication_data["weight"] < 1:
                 raise HTTPException(status_code=422, detail="medication weight must be greater than 0")
+            
+
+        if "drone_id" in medication_data.keys():
+
+            drone = session.get(Drone, medication_data['drone_id'])
+            if not drone:
+                raise HTTPException(status_code=404, detail="Drone not found")
+            
+            available_cargo_weight = drone.weight_limit - sum([med.weight for med in drone.medications])
+            
+            if "weight" in medication_data.keys():                   
+
+                if available_cargo_weight < medication_data['weight']:
+                    raise HTTPException(status_code=422, detail=f"The weight of the Medication exceeds the available cargo weight of the Drone.")
+
+            else:
+
+                if available_cargo_weight < db_medication.weight:
+                    raise HTTPException(status_code=422, detail=f"The weight of the Medication exceeds the available cargo weight of the Drone.")
 
 
         if "name" in medication_data.keys():
