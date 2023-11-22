@@ -37,6 +37,16 @@ class DroneState(str, Enum):
 #-------------------------------------------------------------------------------------------------#
 
 
+class DroneBatteryLog(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    drone_id: int = Field(foreign_key="drone.id")
+    battery_level: float = Field()
+    timestamp: datetime = Field(default_factory=datetime.now)
+
+
+#-------------------------------------------------------------------------------------------------#
+
+
 class DroneBase(SQLModel):
     created_at: Optional[datetime] = Field(default_factory=datetime.utcnow, sa_column=Column("created_at", DateTime(timezone=True)))
     last_update: Optional[datetime] = Field(default_factory=datetime.utcnow, sa_column=Column("last_update", DateTime(timezone=True)))

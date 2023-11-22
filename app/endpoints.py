@@ -24,7 +24,8 @@ from .models import (
     MedicationCreate,
     MedicationUpdate, 
     DroneModel, 
-    DroneState
+    DroneState,
+    DroneBatteryLog
 )
 
 
@@ -349,4 +350,14 @@ def link_medication_with_drone(med_code: str, serial_number: str, session: Sessi
 
 #-------------------------------------------------------------------------------------------------#
 
+
+@drones_router.get("/latest_drone_battery_logs")
+async def get_latest_drone_battery_logs(session: Session = Depends(get_session)):          
+    number_of_drones = len(session.query(Drone).all())
+    query = session.query(DroneBatteryLog).order_by(DroneBatteryLog.timestamp.desc()).limit(number_of_drones)
+    result = session.exec(query).fetchall()
+    return result
+
+
+#-------------------------------------------------------------------------------------------------#
 
