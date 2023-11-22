@@ -93,6 +93,32 @@ def read_drone_battery_level_by_serial_number(*, session: Session = Depends(get_
 #-------------------------------------------------------------------------------------------------#
 
 
+@drones_router.get("/drones/{serial_number}/medications", response_model=List[MedicationRead])
+def get_drone_medications(serial_number: str, session: Session = Depends(get_session)):
+    query_drone = select(Drone).where(Drone.serial_number == serial_number)
+    drone = session.exec(query_drone).first()
+    if not drone:
+        raise HTTPException(status_code=404, detail="Drone not found")
+    medications = drone.medications
+    return medications
+
+
+@drones_router.get("/drones/{serial_number}/available_cargo_weight")
+def get_available_cargo_weight(serial_number: str, session: Session = Depends(get_session)):
+    # Search for the drone by its serial number
+    query_drone = select(Drone).where(Drone.serial_number == serial_number)
+    drone = session.exec(query_drone).first()
+    if not drone:
+        raise HTTPException(status_code=404, detail="Drone not found")
+
+    available_cargo_weight = drone.weight_limit - sum([med.weight for med in drone.medications])
+
+    return {f"available_cargo_weight for drone '{serial_number}'": available_cargo_weight}
+
+
+#-------------------------------------------------------------------------------------------------#
+
+
 @drones_router.post("/drones/", response_model=DroneRead)
 def create_drone(*, session: Session = Depends(get_session), drone: DroneCreate):
     db_drone = Drone.from_orm(drone)
@@ -265,4 +291,33 @@ def read_medication_by_code(*, session: Session = Depends(get_session), code: st
 
 
 #-------------------------------------------------------------------------------------------------#
+
+
+@drones_router.post("/medications/{med_code}/link-drone/{serial_number}")
+def link_medication_with_drone(med_code: str, serial_number: str, session: Session = Depends(get_session)):
+    
+    query_medication = select(Medication).where(Medication.code == med_code)
+    medication = session.exec(query_medication).first()
+    if not medication:
+        raise HTTPException(status_code=404, detail="Medication not found")
+
+    query_drone = select(Drone).where(Drone.serial_number == serial_number)
+    drone = session.exec(query_drone).first()
+    if not drone:
+        raise HTTPException(status_code=404, detail="Drone not found")
+    
+    available_cargo_weight = drone.weight_limit - sum([med.weight for med in drone.medications])
+    if available_cargo_weight < medication.weight:
+        raise HTTPException(status_code=422, detail=f"The weight of the Medication exceeds the available cargo weight of the Drone.")
+
+    medication.drone = drone
+    session.add(medication)
+    session.commit()
+
+    return {"message": f"Medication {med_code} linked with drone {serial_number}"}
+
+
+
+#-------------------------------------------------------------------------------------------------#
+
 

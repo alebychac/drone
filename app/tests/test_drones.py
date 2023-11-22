@@ -4,56 +4,7 @@
 #-------------------------------------------------------------------------------------------------#
 
 
-from app.models import DroneModel, DroneState
 from app.tests.config_for_tests import *
-
-
-#-------------------------------------------------------------------------------------------------#
-
-
-drone_item_1 = {
-    "serial_number": "DR-01",
-    "model": DroneModel.light_weight,
-    "weight_limit": 125,
-    "battery_capacity": 100,
-    "state": DroneState.idle,
-}
-
-
-drone_item_2 = {
-    "serial_number": "DR-02",
-    "model": DroneModel.light_weight,
-    "weight_limit": 125,
-    "battery_capacity": 100,
-    "state": DroneState.loading,
-}
-
-
-drone_item_3 = {
-    "serial_number": "DR-03",
-    "model": DroneModel.cruiser_weight,
-    "weight_limit": 375,
-    "battery_capacity": 100,
-    "state": DroneState.loaded,
-}
-
-
-drone_item_4 = {
-    "serial_number": "DR-04",
-    "model": DroneModel.heavy_weight,
-    "weight_limit": 500,
-    "battery_capacity": 100,
-    "state": DroneState.idle,
-}
-
-
-
-drone_item_incomplete = {
-    "model": DroneModel.light_weight,
-    "weight_limit": 125,
-    "battery_capacity": 100,
-    "state": DroneState.idle,
-}
 
 
 #-------------------------------------------------------------------------------------------------#
@@ -70,7 +21,6 @@ def test_get_drone_models(client: TestClient):
 def test_get_drone_states(client: TestClient):
     
     response = client.get(f"{base_url}/{drones_url}/states")
-    print(response.url)
     assert response.status_code == 200
     assert response.json() == {"drone_states": [model.value for model in DroneState]}
 
@@ -113,6 +63,160 @@ def test_get_idle_drones(session: Session, client: TestClient):
     assert data[1]["weight_limit"] == 500
     assert data[1]["battery_capacity"] == 100
     assert data[1]["state"] == DroneState.idle
+
+
+#-------------------------------------------------------------------------------------------------#
+
+
+def test_get_available_cargo_weight_for_empty_drone(session: Session, client: TestClient):   
+
+    response = client.post(f"{base_url}/{drones_url}/", json=drone_item_1)
+    assert response.status_code == 200
+    drone_data = response.json()
+
+    response = client.get(f"{base_url}/{drones_url}/{drone_data['serial_number']}/available_cargo_weight")
+    assert response.status_code == 200
+    data = response.json()
+
+    assert {f"available_cargo_weight for drone '{drone_data['serial_number']}'": drone_data['weight_limit']} == data
+
+
+def test_get_available_cargo_weight_for_drone_that_doesnt_exists(session: Session, client: TestClient):   
+    response = client.get(f"{base_url}/{drones_url}/DR-01/available_cargo_weight")
+    assert response.status_code == 404
+
+
+def test_get_available_cargo_weight(session: Session, client: TestClient):   
+
+    response = client.post(f"{base_url}/{drones_url}/", json=drone_item_1)
+    assert response.status_code == 200
+    drone_data = response.json()
+    
+    response = client.post(f"{base_url}/{medications_url}/", json=medication_item_1)
+    assert response.status_code == 200
+    med_data = response.json()
+    
+    response = client.post(f"{base_url}/{medications_url}/{med_data['code']}/link-drone/{drone_data['serial_number']}")
+    assert response.status_code == 200
+
+    response = client.get(f"{base_url}/{drones_url}/{drone_data['serial_number']}/available_cargo_weight")
+    assert response.status_code == 200
+    data = response.json()
+    
+    query_drone = select(Drone).where(Drone.serial_number == drone_data['serial_number'])
+    drone = session.exec(query_drone).first()
+    available_cargo_weight = drone.weight_limit - sum([med.weight for med in drone.medications])
+
+    assert {f"available_cargo_weight for drone '{drone_data['serial_number']}'": available_cargo_weight} == data
+
+
+def test_get_available_cargo_weight_to_get_0_cargo_weigth_available(session: Session, client: TestClient):   
+
+    response = client.post(f"{base_url}/{drones_url}/", json=drone_item_1)
+    assert response.status_code == 200
+    drone_data = response.json()
+    
+    response = client.post(f"{base_url}/{medications_url}/", json=medication_item_1)
+    assert response.status_code == 200
+    med_data = response.json()
+    
+    response = client.post(f"{base_url}/{medications_url}/{med_data['code']}/link-drone/{drone_data['serial_number']}")
+    assert response.status_code == 200
+
+    response = client.post(f"{base_url}/{medications_url}/", json=medication_item_2)
+    assert response.status_code == 200
+    med_data = response.json()
+    
+    response = client.post(f"{base_url}/{medications_url}/{med_data['code']}/link-drone/{drone_data['serial_number']}")
+    assert response.status_code == 200
+
+    response = client.get(f"{base_url}/{drones_url}/{drone_data['serial_number']}/available_cargo_weight")
+    assert response.status_code == 200
+    data = response.json()
+    
+    query_drone = select(Drone).where(Drone.serial_number == drone_data['serial_number'])
+    drone = session.exec(query_drone).first()
+    available_cargo_weight = drone.weight_limit - sum([med.weight for med in drone.medications])
+
+    assert {f"available_cargo_weight for drone '{drone_data['serial_number']}'": 0} == data
+
+
+#-------------------------------------------------------------------------------------------------#
+
+
+def test_get_drone_medications_1_medication(session: Session, client: TestClient):   
+
+    response = client.post(f"{base_url}/{drones_url}/", json=drone_item_1)
+    assert response.status_code == 200
+    drone_data = response.json()
+    
+    response = client.post(f"{base_url}/{medications_url}/", json=medication_item_1)
+    assert response.status_code == 200
+    med_data = response.json()
+    
+    response = client.post(f"{base_url}/{medications_url}/{med_data['code']}/link-drone/{drone_data['serial_number']}")
+    assert response.status_code == 200
+
+    response = client.get(f"{base_url}/{drones_url}/{drone_data['serial_number']}/medications")
+    assert response.status_code == 200
+    data = response.json()
+    
+    query_drone = select(Drone).where(Drone.serial_number == drone_data['serial_number'])
+    drone = session.exec(query_drone).first()
+    medications = drone.medications
+
+    assert medications[0].id == data[0]["id"]
+    assert medications[0].name == data[0]["name"]
+    assert medications[0].code == data[0]["code"]
+    assert medications[0].weight == data[0]["weight"]
+    assert medications[0].image == data[0]["image"]
+
+
+def test_get_drone_medications_2_medication(session: Session, client: TestClient):   
+
+    response = client.post(f"{base_url}/{drones_url}/", json=drone_item_1)
+    assert response.status_code == 200
+    drone_data = response.json()
+    
+    response = client.post(f"{base_url}/{medications_url}/", json=medication_item_1)
+    assert response.status_code == 200
+    med_data = response.json()
+    
+    response = client.post(f"{base_url}/{medications_url}/{med_data['code']}/link-drone/{drone_data['serial_number']}")
+    assert response.status_code == 200
+    
+    response = client.post(f"{base_url}/{medications_url}/", json=medication_item_2)
+    assert response.status_code == 200
+    med_data = response.json()
+    
+    response = client.post(f"{base_url}/{medications_url}/{med_data['code']}/link-drone/{drone_data['serial_number']}")
+    assert response.status_code == 200
+
+    response = client.get(f"{base_url}/{drones_url}/{drone_data['serial_number']}/medications")
+    assert response.status_code == 200
+    data = response.json()
+    
+    query_drone = select(Drone).where(Drone.serial_number == drone_data['serial_number'])
+    drone = session.exec(query_drone).first()
+    medications = drone.medications
+
+    assert medications[0].id == data[0]["id"]
+    assert medications[0].name == data[0]["name"]
+    assert medications[0].code == data[0]["code"]
+    assert medications[0].weight == data[0]["weight"]
+    assert medications[0].image == data[0]["image"]
+
+    assert medications[1].id == data[1]["id"]
+    assert medications[1].name == data[1]["name"]
+    assert medications[1].code == data[1]["code"]
+    assert medications[1].weight == data[1]["weight"]
+    assert medications[1].image == data[1]["image"]
+
+
+def test_get_drone_medications_for_drone_that_doesnt_exists(session: Session, client: TestClient):   
+
+    response = client.get(f"{base_url}/{drones_url}/DR-01/medications")
+    assert response.status_code == 404
 
 
 #-------------------------------------------------------------------------------------------------#
@@ -395,48 +499,58 @@ def test_create_drone_incomplete(client: TestClient):
 
 
 def test_create_drone_invalid(client: TestClient):
+    n = drone_item_1["serial_number"]
     drone_item_1["serial_number"] = "s"*101
     response = client.post(
         f"{base_url}/{drones_url}",
         json=drone_item_1,
     )
     assert response.status_code == 422
+    drone_item_1["serial_number"] = n
 
 
 def test_create_drone_with_weight_limit_over_limit(client: TestClient):
+    n = drone_item_1["weight_limit"]
     drone_item_1["weight_limit"] = 501
     response = client.post(
         f"{base_url}/{drones_url}",
         json=drone_item_1,
     )
     assert response.status_code == 422
+    drone_item_1["weight_limit"] = n
 
 
 def test_create_drone_with_weight_limit_under_limit(client: TestClient):
+    n = drone_item_1["weight_limit"]
     drone_item_1["weight_limit"] = -1
     response = client.post(
         f"{base_url}/{drones_url}",
         json=drone_item_1,
     )
     assert response.status_code == 422
+    drone_item_1["weight_limit"] = n
 
 
-def test_create_drone_with_weight_limit_over_limit(client: TestClient):
+def test_create_drone_with_battery_capacity_limit_over_limit(client: TestClient):
+    n = drone_item_1["battery_capacity"]
     drone_item_1["battery_capacity"] = 101
     response = client.post(
         f"{base_url}/{drones_url}",
         json=drone_item_1,
     )
     assert response.status_code == 422
+    drone_item_1["battery_capacity"] = n
 
 
-def test_create_drone_with_weight_limit_under_limit(client: TestClient):
+def test_create_drone_with_battery_capacity_limit_under_limit(client: TestClient):
+    n = drone_item_1["battery_capacity"]
     drone_item_1["battery_capacity"] = -1
     response = client.post(
         f"{base_url}/{drones_url}",
         json=drone_item_1,
     )
     assert response.status_code == 422
+    drone_item_1["battery_capacity"] = n
 
 
 #-------------------------------------------------------------------------------------------------#
