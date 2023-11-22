@@ -12,7 +12,8 @@ from dotenv import load_dotenv
 from os import getenv
 
 from .db_engine import get_session_2
-from .models import Drone, DroneBatteryLog
+from .models.drone import Drone
+from .models.drone_battery_log import DroneBatteryLog
 
 
 #-------------------------------------------------------------------------------------------------#

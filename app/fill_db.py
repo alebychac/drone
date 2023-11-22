@@ -6,7 +6,7 @@
 
 import requests
 
-from models import DroneModel, DroneState
+from models.enums import DroneModel, DroneState
 
 
 #-------------------------------------------------------------------------------------------------#
