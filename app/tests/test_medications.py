@@ -11,8 +11,6 @@ from app.tests.config_for_tests import *
 #-------------------------------------------------------------------------------------------------#
 
 
-
-
 medication_item_1 = {
     "name": "metamizol",
     "weight": 50,
@@ -37,6 +35,33 @@ medication_item_incomplete = {
     "image": "imag dip 01",
     # "drone_id": 1,
 }
+
+#-------------------------------------------------------------------------------------------------#
+
+
+def test_read_medication_by_code(session: Session, client: TestClient):
+    
+    response = client.post(f"{base_url}/{medications_url}/", json=medication_item_1)
+    medication_code = response.json()["code"]
+    assert response.status_code == 200
+
+    response = client.get(f"{base_url}/{medications_url}/code/{medication_code}")
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data["name"] == medication_item_1["name"]
+    assert data["code"] == medication_item_1["code"]
+    assert data["weight"] == medication_item_1["weight"]
+    assert data["image"] == medication_item_1["image"]
+
+
+def test_read_medication_by_code_that_doesnt_exists(session: Session, client: TestClient):
+    
+    response = client.post(f"{base_url}/{medications_url}/", json=medication_item_1)
+    assert response.status_code == 200
+
+    response = client.get(f"{base_url}/{medications_url}/code/{medication_item_2['code']}")
+    assert response.status_code == 404
 
 
 #-------------------------------------------------------------------------------------------------#

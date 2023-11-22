@@ -254,3 +254,15 @@ def delete_medication(*, session: Session = Depends(get_session), medication_id:
 
 #-------------------------------------------------------------------------------------------------#
 
+
+@drones_router.get("/medications/code/{code}", response_model=MedicationRead)
+def read_medication_by_code(*, session: Session = Depends(get_session), code: str):
+    query = select(Medication).where(Medication.code == code)
+    medication = session.exec(query).first()
+    if not medication:
+        raise HTTPException(status_code=404, detail="Medication not found")
+    return medication
+
+
+#-------------------------------------------------------------------------------------------------#
+
