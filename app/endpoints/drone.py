@@ -22,19 +22,19 @@ from app.models.drone_battery_log import DroneBatteryLog
 #-------------------------------------------------------------------------------------------------#
 
 
-drones_router = APIRouter()
+drones_router = APIRouter(prefix=f"/drones")
 
 
 #-------------------------------------------------------------------------------------------------#
 
 
 
-@drones_router.get("/drones/models")
+@drones_router.get("/models")
 async def get_drone_models():
     return {"drone_models": [model.value for model in DroneModel]}
 
 
-@drones_router.get("/drones/states")
+@drones_router.get("/states")
 async def get_drone_states():
     return {"drone_states": [model.value for model in DroneState]}
 
@@ -50,7 +50,7 @@ async def get_drone_states():
 #   \___|_|  \___|\__,_|\__\___|
 
 
-@drones_router.post("/drones/", response_model=DroneRead)
+@drones_router.post("/", response_model=DroneRead)
 def create_drone(*, session: Session = Depends(get_session), drone: DroneCreate):
     db_drone = Drone.from_orm(drone)
     try:
@@ -75,7 +75,7 @@ def create_drone(*, session: Session = Depends(get_session), drone: DroneCreate)
 #   |___/      
 
 
-@drones_router.get("/drones/", response_model=List[DroneRead])
+@drones_router.get("/", response_model=List[DroneRead])
 def get_drones(
     *,
     session: Session = Depends(get_session),
@@ -86,7 +86,7 @@ def get_drones(
     return drones
 
 
-@drones_router.get("/drones/idle-drones", response_model=List[DroneRead])
+@drones_router.get("/idle-drones", response_model=List[DroneRead])
 async def get_idle_drones(
     *,
     session: Session = Depends(get_session),
@@ -97,7 +97,7 @@ async def get_idle_drones(
     return drones
 
 
-@drones_router.get("/drones/{drone_id}", response_model=DroneRead)
+@drones_router.get("/{drone_id}", response_model=DroneRead)
 def get_drone(*, session: Session = Depends(get_session), drone_id: int):
     drone = session.get(Drone, drone_id)
     if not drone:
@@ -105,7 +105,7 @@ def get_drone(*, session: Session = Depends(get_session), drone_id: int):
     return drone
 
 
-@drones_router.get("/drones/serial_number/{serial_number}", response_model=DroneRead)
+@drones_router.get("/serial_number/{serial_number}", response_model=DroneRead)
 def get_drone_by_serial_number(*, session: Session = Depends(get_session), serial_number: str):
     query = select(Drone).where(Drone.serial_number == serial_number)
     drone = session.exec(query).first()
@@ -114,7 +114,7 @@ def get_drone_by_serial_number(*, session: Session = Depends(get_session), seria
     return drone
 
 
-@drones_router.get("/drones/{drone_id}/battery_level")
+@drones_router.get("/{drone_id}/battery_level")
 def get_drone_battery_level(*, session: Session = Depends(get_session), drone_id: int):
     drone = session.get(Drone, drone_id)
     if not drone:
@@ -122,7 +122,7 @@ def get_drone_battery_level(*, session: Session = Depends(get_session), drone_id
     return {"drone id": drone.id, "battery_level": drone.battery_capacity}
 
 
-@drones_router.get("/drones/serial_number/{serial_number}/battery_level")
+@drones_router.get("/serial_number/{serial_number}/battery_level")
 def get_drone_battery_level_by_serial_number(*, session: Session = Depends(get_session), serial_number: str):
     query = select(Drone).where(Drone.serial_number == serial_number)
     drone = session.exec(query).first()
@@ -131,7 +131,7 @@ def get_drone_battery_level_by_serial_number(*, session: Session = Depends(get_s
     return {"drone serial number": drone.serial_number, "battery_level": drone.battery_capacity}
 
 
-@drones_router.get("/drones/{serial_number}/medications", response_model=List[MedicationRead])
+@drones_router.get("/{serial_number}/medications", response_model=List[MedicationRead])
 def get_drone_medications_by_serial_number(serial_number: str, session: Session = Depends(get_session)):
     query_drone = select(Drone).where(Drone.serial_number == serial_number)
     drone = session.exec(query_drone).first()
@@ -141,7 +141,7 @@ def get_drone_medications_by_serial_number(serial_number: str, session: Session 
     return medications
 
 
-@drones_router.get("/drones/{serial_number}/available_cargo_weight")
+@drones_router.get("/{serial_number}/available_cargo_weight")
 def get_available_cargo_weight_by_serial_number(serial_number: str, session: Session = Depends(get_session)):
     # Search for the drone by its serial number
     query_drone = select(Drone).where(Drone.serial_number == serial_number)
@@ -175,7 +175,7 @@ async def get_latest_drone_battery_logs(session: Session = Depends(get_session))
 #        |_|         
 
 
-@drones_router.patch("/drones/{drone_id}", response_model=DroneRead)
+@drones_router.patch("/{drone_id}", response_model=DroneRead)
 def update_drone(
     *, session: Session = Depends(get_session), drone_id: int, drone: DroneUpdate
 ):
@@ -216,7 +216,7 @@ def update_drone(
 #   \__,_|\___|_|\___|\__\___|
                                       
 
-@drones_router.delete("/drones/{drone_id}")
+@drones_router.delete("/{drone_id}")
 def delete_drone(*, session: Session = Depends(get_session), drone_id: int):
     drone = session.get(Drone, drone_id)
     if not drone:
@@ -227,39 +227,3 @@ def delete_drone(*, session: Session = Depends(get_session), drone_id: int):
 
 
 #-------------------------------------------------------------------------------------------------#
-
-
-#         _   _                   
-#        | | | |                  
-#    ___ | |_| |__   ___ _ __ ___ 
-#   / _ \| __| '_ \ / _ \ '__/ __|
-#  | (_) | |_| | | |  __/ |  \__ \
-#   \___/ \__|_| |_|\___|_|  |___/
-
-
-@drones_router.post("/medications/{medication_code}/link-drone/{drone_serial_number}")
-def link_medication_with_drone(medication_code: str, drone_serial_number: str, session: Session = Depends(get_session)):
-    
-    query_medication = select(Medication).where(Medication.code == medication_code)
-    medication = session.exec(query_medication).first()
-    if not medication:
-        raise HTTPException(status_code=404, detail="Medication not found")
-
-    query_drone = select(Drone).where(Drone.serial_number == drone_serial_number)
-    drone = session.exec(query_drone).first()
-    if not drone:
-        raise HTTPException(status_code=404, detail="Drone not found")
-    
-    available_cargo_weight = drone.weight_limit - sum([med.weight for med in drone.medications])
-    if available_cargo_weight < medication.weight:
-        raise HTTPException(status_code=422, detail=f"The weight of the Medication exceeds the available cargo weight of the Drone.")
-
-    medication.drone = drone
-    session.add(medication)
-    session.commit()
-
-    return {"message": f"Medication {medication_code} linked with drone {drone_serial_number}"}
-
-
-#-------------------------------------------------------------------------------------------------#
-

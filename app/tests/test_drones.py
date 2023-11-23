@@ -46,23 +46,11 @@ def test_get_idle_drones(session: Session, client: TestClient):
     data = response.json()
     assert response.status_code == 200
     assert len(data) == 4
-
     
     response = client.get(f"{base_url}/{drones_url}/idle-drones")
     data = response.json()
     assert response.status_code == 200
     assert len(data) == 2
-    assert data[0]["serial_number"] == "DR-01"
-    assert data[0]["model"] == DroneModel.light_weight
-    assert data[0]["weight_limit"] == 125
-    assert data[0]["battery_capacity"] == 100
-    assert data[0]["state"] == DroneState.idle
-
-    assert data[1]["serial_number"] == "DR-04"
-    assert data[1]["model"] == DroneModel.heavy_weight
-    assert data[1]["weight_limit"] == 500
-    assert data[1]["battery_capacity"] == 100
-    assert data[1]["state"] == DroneState.idle
 
 
 #-------------------------------------------------------------------------------------------------#

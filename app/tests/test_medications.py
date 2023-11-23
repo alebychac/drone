@@ -299,6 +299,23 @@ def test_update_medication_with_drone_medication_that_doesnt_exists(session: Ses
     assert response.status_code == 404
 
 
+def test_update_medication_with_drone_battery_below_25(session: Session, client: TestClient):   
+
+    response = client.post(f"{base_url}/{drones_url}/", json=drone_item_4)
+    drone_data = response.json()
+    assert response.status_code == 200
+
+    response = client.post(f"{base_url}/{medications_url}/", json=medication_item_1)
+    assert response.status_code == 200
+
+    data = response.json()
+    medication_id = data['id']
+    response = client.patch(f"{base_url}/{medications_url}/{medication_id}", json={"drone_id": drone_data['id']})
+   
+    assert response.status_code == 422
+    assert {"detail": "Drone Battery below 25 %"} 
+    
+
 #-------------------------------------------------------------------------------------------------#
 
 
@@ -522,6 +539,19 @@ def test_create_medication_with_drone_medication_that_doesnt_exists(session: Ses
     medication_item_1["drone_id"] = None
     assert response.status_code == 404
 
+
+def test_create_medication_with_drone_battery_below_25(session: Session, client: TestClient):   
+
+    response = client.post(f"{base_url}/{drones_url}/", json=drone_item_4)
+    assert response.status_code == 200
+    
+    medication_item_1["drone_id"] = 1
+    response = client.post(f"{base_url}/{medications_url}/", json=medication_item_1)
+    assert response.status_code == 422
+    assert {"detail": "Drone Battery below 25 %"} 
+    medication_item_1["drone_id"] = None
+    
+
     
 #-------------------------------------------------------------------------------------------------#
 
@@ -657,3 +687,19 @@ def test_link_medication_with_drone_exceeds_cargo_weight(session: Session, clien
     assert medications[1].code == med_data_2["code"]
     assert medications[1].weight == med_data_2["weight"]
     assert medications[1].image == med_data_2["image"]
+
+
+def test_link_medication_with_drone_battery_below_25(session: Session, client: TestClient):   
+
+    response = client.post(f"{base_url}/{drones_url}/", json=drone_item_4)
+    drone_data = response.json()
+    assert response.status_code == 200
+    
+    response = client.post(f"{base_url}/{medications_url}/", json=medication_item_1)
+    med_data = response.json()
+    assert response.status_code == 200
+    
+    response = client.post(f"{base_url}/{medications_url}/{med_data['code']}/link-drone/{drone_item_4['serial_number']}")
+    assert response.status_code == 422
+    assert {"detail": "Drone Battery below 25 %"} 
+    

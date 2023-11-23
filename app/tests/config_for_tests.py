@@ -93,7 +93,7 @@ drone_item_4 = {
     "serial_number": "DR-04",
     "model": DroneModel.heavy_weight,
     "weight_limit": 500,
-    "battery_capacity": 100,
+    "battery_capacity": 24,
     "state": DroneState.idle,
 }
 

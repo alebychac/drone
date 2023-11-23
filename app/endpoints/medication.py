@@ -15,14 +15,14 @@ from app.db_engine import(
     get_session
 )
 
-from app.models.drone import Drone
+from app.models.drone import Drone, DroneState
 from app.models.medication import Medication, MedicationCreate, MedicationRead, MedicationUpdate
 
 
 #-------------------------------------------------------------------------------------------------#
 
 
-medications_router = APIRouter()
+medications_router = APIRouter(prefix=f"/medications")
 
 
 #-------------------------------------------------------------------------------------------------#
@@ -36,7 +36,7 @@ medications_router = APIRouter()
 #   \___|_|  \___|\__,_|\__\___|
 
 
-@medications_router.post("/medications/", response_model=MedicationRead)
+@medications_router.post("/", response_model=MedicationRead)
 def create_medication(*, session: Session = Depends(get_session), medication: MedicationCreate):
 
     db_medication = Medication.from_orm(medication)    
@@ -50,6 +50,12 @@ def create_medication(*, session: Session = Depends(get_session), medication: Me
 
         if available_cargo_weight < db_medication.weight:
             raise HTTPException(status_code=422, detail=f"The weight of the Medication exceeds the available cargo weight of the Drone.")
+
+        if drone.battery_capacity < 25:
+            raise HTTPException(status_code=422, detail=f"Drone Battery below 25 %")
+        else:
+            drone.state = DroneState.loading
+            session.add(drone)
 
     try:
         session.add(db_medication)
@@ -73,7 +79,7 @@ def create_medication(*, session: Session = Depends(get_session), medication: Me
 #   |___/          
 
 
-@medications_router.get("/medications/", response_model=List[MedicationRead])
+@medications_router.get("/", response_model=List[MedicationRead])
 def get_medications(
     *,
     session: Session = Depends(get_session),
@@ -84,7 +90,7 @@ def get_medications(
     return medications
 
 
-@medications_router.get("/medications/{medication_id}", response_model=MedicationRead)
+@medications_router.get("/{medication_id}", response_model=MedicationRead)
 def get_medication(*, session: Session = Depends(get_session), medication_id: int):
     medication = session.get(Medication, medication_id)
     if not medication:
@@ -92,7 +98,7 @@ def get_medication(*, session: Session = Depends(get_session), medication_id: in
     return medication
 
 
-@medications_router.get("/medications/code/{code}", response_model=MedicationRead)
+@medications_router.get("/code/{code}", response_model=MedicationRead)
 def get_medication_by_code(*, session: Session = Depends(get_session), code: str):
     query = select(Medication).where(Medication.code == code)
     medication = session.exec(query).first()
@@ -114,7 +120,7 @@ def get_medication_by_code(*, session: Session = Depends(get_session), code: str
 #        |_|         
 
 
-@medications_router.patch("/medications/{medication_id}", response_model=MedicationRead)
+@medications_router.patch("/{medication_id}", response_model=MedicationRead)
 def update_medication(
     *, session: Session = Depends(get_session), medication_id: int, medication: MedicationUpdate
 ):
@@ -147,7 +153,12 @@ def update_medication(
 
                 if available_cargo_weight < db_medication.weight:
                     raise HTTPException(status_code=422, detail=f"The weight of the Medication exceeds the available cargo weight of the Drone.")
-
+            
+            if drone.battery_capacity < 25:
+                raise HTTPException(status_code=422, detail=f"Drone Battery below 25 %")
+            else:
+                drone.state = DroneState.loading
+                session.add(drone)
 
         if "name" in medication_data.keys():
             if not match(r"^[a-zA-Z0-9-_]+$", medication_data["name"] ):
@@ -180,7 +191,7 @@ def update_medication(
 #   \__,_|\___|_|\___|\__\___|
                                       
 
-@medications_router.delete("/medications/{medication_id}")
+@medications_router.delete("/{medication_id}")
 def delete_medication(*, session: Session = Depends(get_session), medication_id: int):
     medication = session.get(Medication, medication_id)
     if not medication:
@@ -188,6 +199,48 @@ def delete_medication(*, session: Session = Depends(get_session), medication_id:
     session.delete(medication)
     session.commit()
     return {"ok": True}
+
+
+#-------------------------------------------------------------------------------------------------#
+
+
+
+#         _   _                   
+#        | | | |                  
+#    ___ | |_| |__   ___ _ __ ___ 
+#   / _ \| __| '_ \ / _ \ '__/ __|
+#  | (_) | |_| | | |  __/ |  \__ \
+#   \___/ \__|_| |_|\___|_|  |___/
+
+
+@medications_router.post("/{medication_code}/link-drone/{drone_serial_number}")
+def link_medication_with_drone(medication_code: str, drone_serial_number: str, session: Session = Depends(get_session)):
+    
+    query_medication = select(Medication).where(Medication.code == medication_code)
+    medication = session.exec(query_medication).first()
+    if not medication:
+        raise HTTPException(status_code=404, detail="Medication not found")
+
+    query_drone = select(Drone).where(Drone.serial_number == drone_serial_number)
+    drone = session.exec(query_drone).first()
+    if not drone:
+        raise HTTPException(status_code=404, detail="Drone not found")
+    
+    available_cargo_weight = drone.weight_limit - sum([med.weight for med in drone.medications])
+    if available_cargo_weight < medication.weight:
+        raise HTTPException(status_code=422, detail=f"The weight of the Medication exceeds the available cargo weight of the Drone.")
+       
+    if drone.battery_capacity < 25:
+        raise HTTPException(status_code=422, detail=f"Drone Battery below 25 %")
+    else:
+        drone.state = DroneState.loading
+        session.add(drone)
+        
+    medication.drone = drone
+    session.add(medication)
+    session.commit()
+
+    return {"message": f"Medication {medication_code} linked with drone {drone_serial_number}"}
 
 
 #-------------------------------------------------------------------------------------------------#
