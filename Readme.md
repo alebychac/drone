@@ -1,7 +1,7 @@
 
 # MUSALA SOFT - Drone Project
 
-## the project is runnung on this [address](http://54.221.7.141/docs)
+## the project is running on this [address](http://54.221.7.141/docs)
 
 ## Backend Requirements
 
