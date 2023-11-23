@@ -11,9 +11,9 @@
 
 git clone https://github.com/alebychac/drone.git
 
-* Install python3:
+* Install [python3](https://www.python.org/downloads/).:
 
-** select the latest version from: https://www.python.org/downloads/
+* *  select the latest version from: https://www.python.org/downloads/
 
 * open the project folder
 
@@ -23,7 +23,7 @@ pip install -r requirements.txt
 
 * start the server:
 
-uvicorn drone.app.main:app --reload
+uvicorn app.main:app --reload
 
 * Now you can open your browser and interact with these URLs:
 
@@ -31,11 +31,21 @@ Automatic interactive documentation with Swagger UI (from the OpenAPI backend): 
 
 Alternative automatic documentation with ReDoc (from the OpenAPI backend): http://localhost/redoc
 
+* Fill the database
+
+if you need to fill the database with some elements you can use the script:
+
+app/fill_db.py
+
 ### Project local tests
 
 To test the project run:
 
 pytest
+
+### Migrations
+
+I didn't cover database migrations
 
 ### Migrations
 
