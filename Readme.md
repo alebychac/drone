@@ -1,6 +1,8 @@
 
 # MUSALA SOFT - Drone Project
 
+## the project is runnung on this [address](http://54.221.7.141/docs)
+
 ## Backend Requirements
 
 * [python3](https://www.python.org/downloads/).
@@ -42,10 +44,6 @@ app/fill_db.py
 To test the project run:
 
 pytest
-
-### Migrations
-
-I didn't cover database migrations
 
 ### Migrations
 
